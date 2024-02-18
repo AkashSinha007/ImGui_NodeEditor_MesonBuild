@@ -1,0 +1,69 @@
+Follow the below steps to compile:
+
+$ cd /path/to/source/root
+$ meson setup builddir --native-file native.build && cd builddir
+$ meson compile
+$ meson test
+
+
+===================
+Notes from my side
+===================
+
+*** My Understanding of wrapdb and usage of meson is as follows:  *** 
+
+Example:
+For GLFW 
+1. There was a file glfw.wrap which contains info related to glfw libarray and meson will download 
+   from the provided url if the source is not available already.
+   Also there are ready made libraries that can be obtained using wrapdb portal from official meson page(just google)
+
+2. Inside the git repo of glfw there will be meson build file with name meson.build( default name for meson build actually).
+
+   Imprtant lines to remember is:
+
+   #  Build
+    glfw_lib = library(
+        'glfw3',
+        srcfiles,
+        include_directories: incdirs,
+        dependencies: deps,
+        version: meson.project_version(),
+        build_by_default: true,
+        pic: true,
+        install: get_option('install'),
+    )
+
+    glfw_dep = declare_dependency(
+      include_directories: incdirs,
+      link_with: glfw_lib,
+    ) 
+
+
+    The glfw_dep is the handle which can be used while linking with executables.
+    If we add it in dependencies section, then meson will automatically take care of 
+    handling include directories and linking libraries.
+
+3. One example of using the glfw library is ( mainly 3 lines): 
+
+    i. glfw_dep = subproject('glfw') ===> This line says there is subproject named glfw and you should find with same name 'glfw.wrap' file inside subprojects directory.
+
+        Note: "subprojects" is a hardcoded name for meson build and cannot be changed. Also make sure the wrap file name and subproject('<arg>') <arg> matches.
+
+    ii. glfw_lib = glfw_dep.get_variable('glfw_dep') ===> This line refers to the declare_depepndency section which is defined inside meson.build file( refer prev point)
+
+    iii. executable('sample_app', app_files + gui_files, include_directories : incdir, dependencies : [glfw_lib, gl] ) ==> notice dependencies contains 'glfw_lib'
+
+4. One more thing we should keep in mind is by default, meson will create dynamic library from a source and also will try to link dynamic library.
+   To explicitly specify static or shared libary use 'static_library' or 'shared_library' instead of 'library' in below section:
+
+    glfw_lib = library(   ===> Notice the 'library' handle here (need to replace based on requirement)
+        'glfw3',
+        srcfiles,
+        include_directories: incdirs,
+        dependencies: deps,
+        version: meson.project_version(),
+        build_by_default: true,
+        pic: true,
+        install: get_option('install'),
+    )
